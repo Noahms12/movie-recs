@@ -152,7 +152,11 @@ summarised_movies_df = summarised_movies_df.merge(
 
 # function to get movie id
 def getMovieId(title):
-    return summarised_movies_df.index[summarised_movies_df["title"] == title.lower().strip()][0]
+    #return summarised_movies_df.index[summarised_movies_df["title"] == title.lower().strip()][0]
+    matches = summarised_movies_df[summarised_movies_df["title"].str.contains(title.lower().strip(), na=False)]
+    if len(matches) == 0:
+        raise ValueError(f"No movie found with title: {title}")
+    return matches.index[0]
 
 def getRecommendationsList_Old(movie):
     # recommended movies list
@@ -193,7 +197,7 @@ def printRecommendations(movie_ids):
     movies_list = []
     # print the movie title 
     if (len(movie_ids) > 0):
-        print("Top 20 recommended movies: ")  
+        print("Top 10 recommended movies: ")  
         for id in movie_ids:
                 print(f"{summarised_movies_df.iloc[id]['title']:50s} movie id: {id}")
                 movies_list.append((id, summarised_movies_df.iloc[id]['title']))
@@ -209,8 +213,8 @@ def get_jaccard_score(user_inp_movie_id, rec_movie_id):
     rec_movie_genres = set(summarised_movies_df.iloc[j]["genres"])
 
     score = len(user_inp_movie_genres & rec_movie_genres) / len(user_inp_movie_genres | rec_movie_genres)
-    # if(score >0.2):
-    #     print(f"{summarised_movies_df.iloc[j]['title']:50s}  score: {score} genres:{rec_movie_genres}")
+    if(score >0.2):
+        print(f"{summarised_movies_df.iloc[j]['title']:50s}  score: {score} genres:{rec_movie_genres}")
     return score
     
 def getRecommendations(title):
@@ -219,8 +223,11 @@ def getRecommendations(title):
     # this list will store tuples -> (movie_id, similarity_val)
     enumerated_list = []
 
-    # this list will store the idx of recommended movies
+    # this list will store the idx, jaccard score of recommended movies
     filtered_rec_movies_idx_list = []
+
+    # this dict will store the movie-id & their jaccard score 
+    filtered_rec_movies_idx_dict = {}
 
     # get movie idx
     matching_movies_df = summarised_movies_df[summarised_movies_df["title"].str.contains(title)]
@@ -245,20 +252,29 @@ def getRecommendations(title):
         # extract the movie ids from the list
         rec_movies_idx_list = list(rec_movies_idx_tuple[0] for rec_movies_idx_tuple in rec_movies_idx_tuples)
         # print("movie_ids: ", rec_movies_idx_list)
+        
         # loop thru the list and get the top 10 recommended movies 
+        movie_id = getMovieId(title)
+        print(f"user input:{title:50s} genres:{set(summarised_movies_df.iloc[movie_id]['genres'])}")
+        
         for idx in rec_movies_idx_list:
-            if (len(filtered_rec_movies_idx_list) < 20):
-                movie_id = getMovieId(title)
+            if (len(filtered_rec_movies_idx_dict) < 11):
                 jaccard_score = get_jaccard_score(movie_id, idx)
                 # if the thematic similarity is more than 0.3 then recommend it
                 if jaccard_score > 0.2:
-                    filtered_rec_movies_idx_list.append(idx)
+                    # storing movie id & jaccard score
+                    filtered_rec_movies_idx_dict[idx] = jaccard_score
 
-    return filtered_rec_movies_idx_list
+    # Sort by Jaccard score descending
+    filtered_rec_movies_idx_list = sorted(filtered_rec_movies_idx_dict.items(), key=lambda x: x[1], reverse=True)
+    
+    # Get just the movie IDs from the sorted list
+    final_movie_ids = [idx for idx, score in filtered_rec_movies_idx_list]
+    return final_movie_ids
 
 # def recommend_movies(title: str, top_k=10):
     
 
 if __name__ == "__main__":
     #printRecommendations(getRecommendationsList_Old("spectre"))
-    printRecommendations(getRecommendations("spectre"))
+    printRecommendations(getRecommendations("star wars"))
