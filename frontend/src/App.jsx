@@ -25,13 +25,17 @@ function App() {
         Recommend
       </button>
 
-      <ul>
+      {movies.length > 0 ? (
+        <ul>
         {movies.map((movie, i) => (
           <li key={i}>
-            <strong>{movie[0]}</strong> – {movie[1]}
+            <strong>{movie[1]}</strong>
           </li>
         ))}
       </ul>
+      ) : (
+        <p>No recommendations found. Try another movie title.</p>
+      )}
     </div>
   );
 }

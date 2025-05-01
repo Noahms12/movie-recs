@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from recommender_module import getRecommendations, printRecommendations
 
@@ -13,4 +13,9 @@ app.add_middleware(
 
 @app.get("/recommend")
 def recommend(title: str = Query(...), top_k: int = Query(10)):
-    return {"results": printRecommendations(getRecommendations(title))}
+    try:
+        movie_ids = getRecommendations(title)
+        results = printRecommendations(movie_ids)
+        return {"results": results}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
