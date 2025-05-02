@@ -17,7 +17,7 @@ credits = pd.read_csv("archive/tmdb_5000_credits.csv")
 # data pre-processing
 movies = movies.merge(credits, on='title')
 
-filtered_movies_df = movies[['movie_id', 'title', 'overview', 'keywords', 'genres', 'cast', 'crew', 'popularity', 'vote_average']]
+filtered_movies_df = movies[['movie_id', 'title', 'overview', 'keywords', 'genres', 'cast', 'crew', 'popularity', 'vote_average', 'vote_count']]
 
 filtered_movies_df.isnull().sum()
 
@@ -105,7 +105,8 @@ filtered_movies_df['movie_tag'] = filtered_movies_df['movie_tag'].apply(lambda x
 
 filtered_movies_df["title"] = filtered_movies_df["title"].apply(lambda x: x.lower())
 
-summarised_movies_df = filtered_movies_df[['movie_id', 'title', 'movie_tag', 'popularity_scaled', 'vote_average']]
+## Creating Summarised DF
+summarised_movies_df = filtered_movies_df[['movie_id', 'title', 'movie_tag', 'popularity_scaled', 'vote_average', 'vote_count']]
 
 summarised_movies_df["title"] = summarised_movies_df["title"].apply(lambda x: x.lower())
 
@@ -272,9 +273,20 @@ def getRecommendations(title):
     final_movie_ids = [idx for idx, score in filtered_rec_movies_idx_list]
     return final_movie_ids
 
-# def recommend_movies(title: str, top_k=10):
+def get_popular_recommendations():
+    temp_df = summarised_movies_df.copy()
+
+    # to filter out movies which vote_count >= 500
+    temp_df = temp_df[temp_df["vote_count"] >= 500]  
     
+    temp_df["score"] = ((temp_df["vote_average"] * temp_df["vote_count"]) / 
+    (temp_df["vote_count"] + 500) + (temp_df["popularity_scaled"]))
+
+    top_movies = temp_df.sort_values(by="score", ascending=False).head(10)
+    temp_ids = top_movies.index.tolist()
+    return temp_ids
 
 if __name__ == "__main__":
     #printRecommendations(getRecommendationsList_Old("spectre"))
-    printRecommendations(getRecommendations("star wars"))
+    #printRecommendations(getRecommendations("star wars"))
+    printRecommendations(get_popular_recommendations())
